@@ -59,12 +59,20 @@ export async function setHidden(formData: FormData) {
   refresh();
 }
 
+// The hero is single-select: there's one "displayed first, double size" picture
+// at a time, so promoting a post first clears any existing hero.
 export async function setFeatured(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id"));
   const featured = formData.get("featured") === "true";
+  const supabase = createAdminClient();
 
-  await createAdminClient().from("posts").update({ featured }).eq("id", id);
+  if (featured) {
+    await supabase.from("posts").update({ featured: false }).eq("featured", true);
+    await supabase.from("posts").update({ featured: true }).eq("id", id);
+  } else {
+    await supabase.from("posts").update({ featured: false }).eq("id", id);
+  }
   refresh();
 }
 

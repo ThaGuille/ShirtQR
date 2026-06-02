@@ -83,6 +83,16 @@ export function UploadForm({
       setError("This device can't share a location.");
       return;
     }
+    // Geolocation only works in a secure context (https / localhost). Over a
+    // plain-http LAN address (e.g. a phone on http://192.168.x.x) the browser
+    // blocks it and reports it as "permission denied" — flag that clearly here
+    // so it's not mistaken for the user having tapped "Block".
+    if (typeof window !== "undefined" && window.isSecureContext === false) {
+      setError(
+        "Location needs a secure (https) page — it works on the deployed site, not over a plain http address.",
+      );
+      return;
+    }
     setPending(true);
     setError(null);
     navigator.geolocation.getCurrentPosition(
@@ -105,11 +115,15 @@ export function UploadForm({
       },
       (geoErr) => {
         setPending(false);
-        setError(
-          geoErr.code === geoErr.PERMISSION_DENIED
-            ? "Location permission denied."
-            : "Couldn't get your location.",
-        );
+        if (geoErr.code === geoErr.PERMISSION_DENIED) {
+          setError(
+            "Location permission was denied. Allow location for this site in your browser/OS settings, then try again.",
+          );
+        } else if (geoErr.code === geoErr.TIMEOUT) {
+          setError("Locating timed out. Try again.");
+        } else {
+          setError("Couldn't determine your location.");
+        }
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );

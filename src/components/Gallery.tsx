@@ -18,11 +18,17 @@ export function Gallery({ initialPosts }: { initialPosts: Post[] }) {
     setPosts((prev) => [post, ...prev.filter((p) => p.id !== post.id)]);
   }
 
+  // The admin pins one post as the "hero" (featured) — it shows first, large,
+  // with its caption. Everything else flows into the normal grid below it.
+  const hero = posts.find((p) => p.featured) ?? null;
+  const rest = hero ? posts.filter((p) => p.id !== hero.id) : posts;
   const isEmpty = posts.length === 0 && !uploading;
 
   return (
     <>
       <UploadForm onUploaded={prepend} onPendingChange={setUploading} />
+
+      {hero && <HeroCard post={hero} />}
 
       {isEmpty ? (
         <p className="rounded-xl border border-dashed border-neutral-800 p-8 text-center text-sm text-neutral-500">
@@ -33,12 +39,10 @@ export function Gallery({ initialPosts }: { initialPosts: Post[] }) {
           {/* Optimistic placeholder while an upload/location is in flight. */}
           {uploading && <SkeletonCard />}
 
-          {posts.map((post) => (
+          {rest.map((post) => (
             <li
               key={post.id}
-              className={`overflow-hidden rounded-xl border bg-neutral-900 ${
-                post.featured ? "border-emerald-500" : "border-neutral-800"
-              }`}
+              className="overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900"
             >
               <PostMedia post={post} />
               <div className="flex items-center justify-between gap-2 p-2">
@@ -52,6 +56,28 @@ export function Gallery({ initialPosts }: { initialPosts: Post[] }) {
         </ul>
       )}
     </>
+  );
+}
+
+// The pinned post: full width (≈2× a grid cell), with its caption shown in full.
+function HeroCard({ post }: { post: Post }) {
+  return (
+    <section className="overflow-hidden rounded-xl border-2 border-emerald-500 bg-neutral-900">
+      <PostMedia post={post} variant="hero" />
+      <div className="flex items-start justify-between gap-3 p-3">
+        <div className="min-w-0">
+          <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300">
+            ★ Featured
+          </span>
+          {post.caption && (
+            <p className="mt-2 text-base font-medium text-neutral-100">
+              {post.caption}
+            </p>
+          )}
+        </div>
+        <VoteButton postId={post.id} initialCount={post.vote_count} />
+      </div>
+    </section>
   );
 }
 
@@ -70,17 +96,26 @@ function SkeletonCard() {
   );
 }
 
-function PostMedia({ post }: { post: Post }) {
+function PostMedia({
+  post,
+  variant = "grid",
+}: {
+  post: Post;
+  variant?: "grid" | "hero";
+}) {
+  const hero = variant === "hero";
+
   if (post.type === "photo" && post.image_path) {
     return (
       <Image
         src={photoUrl(post.image_path)}
         alt={post.caption ?? "Festival photo"}
-        width={500}
-        height={500}
-        // Two columns within a max-w-md (~28rem) page -> each cell is ~13rem.
-        sizes="(max-width: 28rem) 50vw, 14rem"
-        className="aspect-square w-full bg-neutral-800 object-cover"
+        width={1000}
+        height={hero ? 750 : 1000}
+        priority={hero}
+        // Hero spans the full max-w-md page; grid cells are half of it.
+        sizes={hero ? "(max-width: 28rem) 100vw, 28rem" : "(max-width: 28rem) 50vw, 14rem"}
+        className={`w-full bg-neutral-800 object-cover ${hero ? "aspect-[4/3]" : "aspect-square"}`}
       />
     );
   }
@@ -93,10 +128,12 @@ function PostMedia({ post }: { post: Post }) {
         href={`https://www.google.com/maps/search/?api=1&query=${post.lat},${post.lng}`}
         target="_blank"
         rel="noreferrer"
-        className="flex aspect-square w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-neutral-800 to-neutral-900 text-center"
+        className={`flex w-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-neutral-800 to-neutral-900 text-center ${
+          hero ? "aspect-[4/3]" : "aspect-square"
+        }`}
         aria-label="Open location in Google Maps"
       >
-        <span className="text-4xl">📍</span>
+        <span className={hero ? "text-6xl" : "text-4xl"}>📍</span>
         <span className="px-2 font-mono text-[10px] text-neutral-400">
           {post.lat.toFixed(4)}, {post.lng.toFixed(4)}
         </span>
@@ -106,7 +143,11 @@ function PostMedia({ post }: { post: Post }) {
   }
 
   return (
-    <div className="flex aspect-square w-full items-center justify-center bg-neutral-800 text-neutral-600">
+    <div
+      className={`flex w-full items-center justify-center bg-neutral-800 text-neutral-600 ${
+        hero ? "aspect-[4/3]" : "aspect-square"
+      }`}
+    >
       ?
     </div>
   );

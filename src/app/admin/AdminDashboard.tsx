@@ -152,7 +152,7 @@ function PostRow({ post }: { post: AdminPost }) {
           <span className="font-semibold text-neutral-200">▲ {post.vote_count}</span>
           {post.featured && (
             <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-300">
-              featured
+              hero
             </span>
           )}
           {post.hidden && (
@@ -172,7 +172,7 @@ function PostRow({ post }: { post: AdminPost }) {
             id={post.id}
             field="featured"
             next={!post.featured}
-            label={post.featured ? "Unfeature" : "Feature"}
+            label={post.featured ? "Remove hero" : "Set as hero"}
           />
           <ToggleButton
             action={setHidden}

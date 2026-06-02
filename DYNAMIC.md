@@ -9,6 +9,47 @@ here. This file is only the moving edge of the work.
 
 ---
 
+## 2026-06-02 — Hero post + clearer geolocation errors
+
+Two user requests. `tsc` + `next build` clean (live hero demo skipped — won't
+mutate prod DB; user toggles it from /admin).
+
+- **Hero (pinned, double-size, with caption)** — reused the existing `featured`
+  flag, now **single-select**: `setFeatured` in `src/app/admin/actions.ts` clears
+  any other featured post before promoting one. `Gallery.tsx` pulls the featured
+  post out of the grid and renders `<HeroCard>` first — full-width (≈2× a grid
+  cell, `aspect-[4/3]`, `next/image` priority) with its caption shown in full.
+  Admin button relabeled "Set as hero" / "Remove hero"; badge "hero". No schema
+  change.
+- **Geolocation "permission denied" fix** — root cause is the secure-context rule
+  (same family as the `crypto.randomUUID` issue): the Geolocation API is blocked
+  over plain-http LAN, surfacing as PERMISSION_DENIED. `UploadForm.tsx` now checks
+  `window.isSecureContext` up front and gives distinct messages for
+  insecure-context vs real denied vs timeout. Real fix for the user: use the
+  deployed https site (or localhost), not the http LAN IP.
+
+---
+
+## 2026-06-02 — Added agent docs + Vercel deploy guide
+
+Code is committed (`e2478e1 full webpage`). Added agent-facing documentation and
+a human deploy guide:
+
+- **`docs/AGENT_CONTEXT.md`** — dense single-file reference for an agent: stack,
+  data model + RLS, request flows, full `src/` file map, gotchas/conventions,
+  run/verify commands. Read this first on a fresh chat.
+- **`AGENTS.md`** (repo root) — short pointer to `docs/AGENT_CONTEXT.md` +
+  `DYNAMIC.md`, plus the key conventions (keep this log rolling, use
+  `lib/uuid.ts`, RLS boundary, admin Server Actions re-check `isAdmin`).
+- **`docs/DEPLOY.md`** — step-by-step Vercel deploy for the user (push to GitHub →
+  import → 5 env vars → deploy → re-run schema → set `NEXT_PUBLIC_SITE_URL` →
+  print QR).
+
+No code changes. Project is feature-complete; next real action is the user
+running the Vercel deploy.
+
+---
+
 ## 2026-06-02 — Phase 4 complete: polish (project feature-complete)
 
 Final roadmap phase done. `next build` clean; smoke-tested live: post rate limit
@@ -76,42 +117,3 @@ Phone hitting the dev server at `http://192.168.x.x` threw
 both call sites (`src/lib/deviceId.ts`, `src/components/UploadForm.tsx`). Typecheck
 clean. Note: full phone testing still wants https (Vercel) eventually, but LAN
 upload/vote now works.
-
----
-
-## 2026-06-02 — Phase 2 complete: public page is live
-
-Built the whole public page against the connected Supabase project. Verified
-locally (`next build` + `next start`): home renders server-side, `/api/posts`
-returns `{"posts":[]}` from the live DB, validation paths return 400s.
-
-- **API** `src/app/api/posts/route.ts` — `GET` lists visible posts (featured →
-  votes → newest, limit 200); `POST` validates + inserts a photo/location via the
-  anon client (RLS-guarded), returns the created row.
-- **API** `src/app/api/vote/route.ts` — `POST {postId, deviceId}` → `cast_vote`
-  RPC, returns the new `voteCount`.
-- **Components** — `VoteButton` (optimistic count, remembers voted post ids in
-  `localStorage`, server count reconciles), `UploadForm` (compress → upload
-  straight to Storage `photos/` → `POST /api/posts`), `Gallery` (client
-  coordinator: holds post state, prepends new uploads, 2-col `next/image` grid).
-- **Page** `src/app/page.tsx` — server component, `force-dynamic`, fetches config
-  + posts in parallel, renders header + `<Gallery>`; shows "paused" when
-  `config.active` is false.
-- **Shared** `src/lib/types.ts` (`Post`, `Config`, `POST_COLUMNS`),
-  `src/lib/photoUrl.ts` (public Storage URL builder).
-- `supabase/schema.sql` has an uncommitted change adding explicit GRANTs (already
-  applied in the project).
-
-**Next (Phase 3 — Admin):** `/admin` password gate (`ADMIN_PASSWORD` cookie),
-delete/hide posts (service-role client), set featured, edit config.
-
-Open polish later: `browser-image-compression` makes the `/` first-load JS ~194kB
-— could lazy-import it; no upload size cap / rate limiting yet (Phase 4).
-
----
-
-## 2026-06-02 — Phase 1 scaffold (baseline)
-
-Structure, config, DB schema, Supabase clients (browser/server/admin), deploy
-path. All Phase 2 component/route files existed as stubs returning placeholders.
-Supabase project connected; `.env.local` + `node_modules` present.
