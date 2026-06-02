@@ -64,7 +64,7 @@ Storage (`@supabase/ssr`, `@supabase/supabase-js`). `browser-image-compression`,
   `isAdmin()`; all call `revalidatePath('/admin','/')`.
 - `app/admin/LoginForm.tsx` — client, `useActionState`, password gate.
 - `app/admin/AdminDashboard.tsx` — server: config editor, QR card, per-post
-  Feature/Hide/Delete forms.
+  Set-as-hero/Hide/Delete forms.
 - `app/admin/ConfirmButton.tsx` — client confirm guard for delete.
 - `components/Gallery.tsx` — client coordinator: holds post state, prepends new
   uploads, optimistic shimmer card while uploading, 2-col `next/image` grid,
@@ -94,10 +94,13 @@ Storage (`@supabase/ssr`, `@supabase/supabase-js`). `browser-image-compression`,
 `NEXT_PUBLIC_SITE_URL` (optional, QR). Live in `.env.local` (gitignored, present).
 
 ## Gotchas / conventions (read before editing)
-- **`crypto.randomUUID()` only exists in secure contexts** (https/localhost). A
-  phone on `http://192.168.x.x` throws "not a function". Always use
-  `lib/uuid.ts`, never `crypto.randomUUID()` directly. Same applies to any new
-  Web Crypto / secure-context-only API.
+- **Secure-context-only APIs bite on plain-http LAN.** A phone on
+  `http://192.168.x.x` is *not* a secure context, so: (a) `crypto.randomUUID()`
+  throws "not a function" — always use `lib/uuid.ts`, never call it directly;
+  (b) the **Geolocation API** is blocked and surfaces as `PERMISSION_DENIED` —
+  `UploadForm` checks `window.isSecureContext` first and explains it. Both work
+  fine on https / localhost. Same caution for any new Web Crypto / geolocation /
+  secure-context API.
 - **Rate limiter is soft**: in-memory, per serverless instance, resets on cold
   start. Fine for one phone spamming; not a hard guarantee. Durable store
   (Supabase table / Upstash) is the upgrade path.

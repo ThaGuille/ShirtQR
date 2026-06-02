@@ -50,7 +50,8 @@ by compression + the upload size cap).
 ## Data model (see `supabase/schema.sql`)
 
 - **posts** — one photo or location. `hidden` = admin soft-delete, `featured`
-  = admin highlight, `vote_count` denormalized for fast reads.
+  = the single "hero" post (admin-pinned, shown first at double size with its
+  caption), `vote_count` denormalized for fast reads.
 - **votes** — `(post_id, device_id)` primary key = one vote per device.
 - **config** — single row: title, message, master on/off switch.
 - **cast_vote()** — atomic RPC that adds a vote and bumps the count, ignoring
