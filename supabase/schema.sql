@@ -105,11 +105,45 @@ create policy "read config" on public.config
   for select to anon using (true);
 
 -- =========================================================================
--- STORAGE  (public bucket for photos)
+-- GRANTS
+-- RLS decides WHICH rows a role can see; a GRANT decides whether the role can
+-- touch the table at all. Supabase does not always auto-grant on new projects,
+-- so we are explicit. (Re-running these is harmless.)
 -- =========================================================================
-insert into storage.buckets (id, name, public)
-values ('photos', 'photos', true)
+grant usage on schema public to anon, authenticated, service_role;
+
+-- Public visitors (anon key): read config, read + add posts, cast votes.
+-- No direct access to the votes table — votes go through cast_vote() only.
+grant select on public.config to anon, authenticated;
+grant select, insert on public.posts to anon, authenticated;
+grant execute on function public.cast_vote(uuid, text) to anon, authenticated;
+
+-- Server admin (service role): full access. It bypasses RLS but still needs
+-- the table grants.
+grant all on public.posts, public.votes, public.config to service_role;
+grant execute on function public.cast_vote(uuid, text) to service_role;
+
+-- =========================================================================
+-- STORAGE  (public bucket for photos)
+-- file_size_limit + allowed_mime_types enforce the upload cap AT THE SOURCE:
+-- Storage itself rejects anything too big or not an image, even if a client
+-- skips our app entirely. We compress to ~0.5 MB in-browser, so 2 MB is plenty
+-- of headroom. The UPDATE applies these to an already-existing bucket too
+-- (the INSERT's ON CONFLICT DO NOTHING won't touch one that's already there).
+-- =========================================================================
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'photos', 'photos', true,
+  2097152,  -- 2 MB
+  array['image/webp', 'image/jpeg', 'image/png']
+)
 on conflict (id) do nothing;
+
+update storage.buckets
+  set public = true,
+      file_size_limit = 2097152,
+      allowed_mime_types = array['image/webp', 'image/jpeg', 'image/png']
+  where id = 'photos';
 
 drop policy if exists "public read photos" on storage.objects;
 create policy "public read photos" on storage.objects

@@ -79,6 +79,7 @@ npm run dev                     # http://localhost:3000
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 - `ADMIN_PASSWORD` (you pick it)
+- `NEXT_PUBLIC_SITE_URL` (optional — your public URL, used for the `/admin` QR code)
 
 ## Deploy
 
@@ -88,9 +89,9 @@ deploy. Point the QR code at the resulting URL. Done.
 ## Roadmap
 
 - [x] **Phase 1 — Scaffold** (this commit): structure, config, DB schema, deploy path.
-- [ ] **Phase 2 — Public page**: gallery sorted by votes, anonymous upload (compress → Storage), one-tap voting.
-- [ ] **Phase 3 — Admin**: password gate, delete/hide, set featured, edit config.
-- [ ] **Phase 4 — Polish**: location pins/map, upload size caps + rate limiting, empty/loading states, the actual QR image.
+- [x] **Phase 2 — Public page**: gallery sorted by votes, anonymous upload (compress → Storage), one-tap voting.
+- [x] **Phase 3 — Admin**: password gate, delete/hide, set featured, edit config.
+- [x] **Phase 4 — Polish**: location pins/map, upload size caps + rate limiting, empty/loading states, the actual QR image.
 
 ## Project layout
 
